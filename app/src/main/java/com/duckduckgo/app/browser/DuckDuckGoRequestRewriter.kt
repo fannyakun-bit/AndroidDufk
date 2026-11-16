@@ -48,7 +48,7 @@ class DuckDuckGoRequestRewriter(
             .fragment(request.fragment)
 
         request.queryParameterNames
-            .filter { it != ParamKey.SOURCE && it != ParamKey.ATB }
+            .filter { it != ParamKey.SOURCE && it != ParamKey.ATB && it != PARAM_ADS }
             .forEach { builder.appendQueryParameter(it, request.getQueryParameter(it)) }
 
         addCustomQueryParams(builder)
@@ -61,7 +61,10 @@ class DuckDuckGoRequestRewriter(
     override fun shouldRewriteRequest(uri: Uri): Boolean {
         return (duckDuckGoUrlDetector.isDuckDuckGoQueryUrl(uri.toString()) || duckDuckGoUrlDetector.isDuckDuckGoStaticUrl(uri.toString())) &&
             !duckDuckGoUrlDetector.isDuckDuckGoEmailUrl(uri.toString()) &&
-            !uri.queryParameterNames.containsAll(arrayListOf(ParamKey.SOURCE, ParamKey.ATB))
+            !(
+                uri.queryParameterNames.containsAll(arrayListOf(ParamKey.SOURCE, ParamKey.ATB)) &&
+                    uri.getQueryParameter(PARAM_ADS) == PARAM_ADS_OFF
+                )
     }
 
     /**
@@ -80,7 +83,14 @@ class DuckDuckGoRequestRewriter(
             if (deviceInfo.isTablet()) ParamValue.SOURCE_TABLET else ParamValue.SOURCE
         }
 
+        // Disable sponsored ads in DuckDuckGo search results
+        builder.appendQueryParameter(PARAM_ADS, PARAM_ADS_OFF)
         builder.appendQueryParameter(ParamKey.HIDE_SERP, ParamValue.HIDE_SERP)
         builder.appendQueryParameter(ParamKey.SOURCE, sourceValue)
+    }
+
+    private companion object {
+        const val PARAM_ADS = "k1"
+        const val PARAM_ADS_OFF = "-1"
     }
 }
